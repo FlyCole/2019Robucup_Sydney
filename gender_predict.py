@@ -23,7 +23,7 @@ def gender(img_name):
     f = open(img_name, 'rb')
     image = base64.b64encode(f.read())
     image64 = str(image).encode("utf-8")
-    params = {"image":''+image64+'',"image_type":"BASE64","face_field":"expression,gender,faceshape,age,race", "max_face_num":10}
+    params = {"image":''+image64+'',"image_type":"BASE64","face_field":"expression,gender,faceshape,age,race,emotion", "max_face_num":10}
     params = urllib.urlencode(params).encode("utf-8")
     access_token = content1.split("\"")[13]
     request_url = request_url + "?access_token=" + access_token
@@ -59,11 +59,15 @@ def gender(img_name):
 
         # When the result of racial detection is arabs, we think the person's skin is black
         if face_list[i]["race"]["type"] == "arabs":
-            face_list[i]["race"]["type"] = "black"
+            face_list[i]["race"]["type"] = "brown"
 
         print "The color of skin of person", i + 1, "is", face_list[i]["race"]["type"]
+
         expression = judge_expression(face_list[i]["expression"]["type"])# Judge the complexion of a person
-        print "The complexion of person", i + 1, "is", expression
+        print "The complexion of person", i + 1, "is", face_list[i]["expression"]["type"]
+
+        print "The emotion of person", i + 1, "is", face_list[i]["emotion"]["type"]
+
         print "================================="
     cv2.imwrite("./gender_result.jpg", img)
     return male_num, female_num, max_rectangle_geder
@@ -71,13 +75,13 @@ def gender(img_name):
 
 def judge_expression(n):
     e = None
-    if n == 0:
-        e = "bad"
-    elif n == 1:
-        e = "normal"
-    elif n == 2:
-        e = "good"
+    if n == "None":
+        e = 0
+    elif n == "smile":
+        e = 1
+    elif n == "laugh":
+        e = 2
     return e
 
 if __name__ == '__main__':
-    gender("./person_image.jpg")
+    gender("./capture.jpg")

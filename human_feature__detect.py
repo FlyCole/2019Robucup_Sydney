@@ -58,11 +58,67 @@ def feature(img_name):
         cv2.rectangle(img, (left, top), (right, bottom), (0, 0, 255), 2)
         # if people_list[i]["attributes"]["age"]["name"].encode("UTF-8") == "青年":
         #     print "Person", i + 1, "is a", "teenager"
-        print "The person", i + 1, "is wearing",  people_list[i]["attributes"]["lower_color"]["name"], people_list[i]["attributes"]["lower_wear"]["name"]
-        print "The person", i + 1, "is wearing", people_list[i]["attributes"]["upper_color"]["name"], people_list[i]["attributes"]["upper_wear"]["name"]
+
+        lower_color = people_list[i]["attributes"]["lower_color"]["name"].encode("UTF-8")
+        lower_color = trans_color(lower_color)
+        upper_color = people_list[i]["attributes"]["upper_color"]["name"].encode("UTF-8")
+        upper_color = trans_color(upper_color)
+
+        lower_wear = people_list[i]["attributes"]["lower_wear"]["name"].encode("UTF-8")
+        lower_wear = trans_wear(lower_wear)
+        upper_wear = people_list[i]["attributes"]["upper_wear"]["name"].encode("UTF-8")
+        upper_wear = trans_wear(upper_wear)
+
+
+        print "The person", i + 1, "is wearing", lower_color, lower_wear
+        print "The person", i + 1, "is wearing", upper_color, upper_wear
 
     cv2.imwrite("./feature_result.jpg", img)
     return male_num, female_num, max_rectangle_geder
+
+
+def trans_color(color):
+    """
+    Translation of color from Chinese to English
+    :param color:
+    :return:color:
+    """
+    if color == "白":
+        color = "white"
+    elif color == "蓝":
+        color = "blue"
+    elif color == "绿":
+        color = "green"
+    elif color == "黑":
+        color = "black"
+    elif color == "红":
+        color = "red"
+    elif color == "黄":
+        color = "yellow"
+    return color
+
+def trans_wear(wear):
+    """
+    Translation of clothing from Chinese to English
+    :param wear:
+    :return:
+    """
+    if wear == "短裤":
+        wear = "shorts"
+    elif wear == "短袖":
+        wear = "short sleeve"
+    elif wear == "长裤":
+        wear = "trousers"
+    elif wear == "长袖":
+        wear = "long sleeve"
+    elif wear == "外套":
+        wear = "coat"
+    elif wear == "夹克":
+        wear = "jacket"
+    elif wear == "不确定":
+        wear = "cloth, the type of which is not sure"
+    return wear
+
 
 if __name__ == '__main__':
     feature("./person_image.jpg")

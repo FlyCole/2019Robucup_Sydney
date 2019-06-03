@@ -1,27 +1,33 @@
 # -*- encoding: UTF-8 -*-
-import qi
-import atexit
-import time
-class PhotoCapture:
-    def __init__(self):
-        atexit.register(self.__del__)
-        self.tp = session.service("ALPhotoCapture")
-        # self.tts = session.service("ALTextToSpeech")
+"""
+    Author: Yifei Ren
+    Name: take_pic
+    Version: 1.0
+    Date: 03/06/2019
+    Description: Take picture using frontal_face_detector.
+                 Press "s" when you want to save picture.
+                 Press "Esc" when you want to exit.
+    Note: When the file is used in pepper, make sure the camera can be detected.
+"""
 
-        # self.tts.setParameter("speed", 75.0)
-        # self.tts.setLanguage("English")
-        print("ready to take pictures")
+import cv2
 
-    def takepic(self):
-        # self.tts.say("I'm going to take a picture")
-        self.tp.setResolution(3)
-        self.tp.takePictures(3, '/home/nao/picture', 'image')
-        # self.tts.say("picture's taken")
-        print("picture's taken")
 
-    def __del__(self):
-        print "exit"
+def capture_pic():
+    cap = cv2.VideoCapture(0)
+    i = 0
+    while (1):
+        ret, frame = cap.read()
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+        elif k == ord('s'):
+            cv2.imwrite('capture.jpg', frame)
+            i += 1
+        cv2.imshow("capture", frame)
+    cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    pc = PhotoCapture()
+    capture_pic()
