@@ -7,7 +7,6 @@ import base64
 import json
 
 
-
 def gender(img_name):
     max_re = 0
     emotion = None
@@ -67,7 +66,7 @@ def gender(img_name):
         expression = judge_expression(face_list[i]["expression"]["type"])# Judge the complexion of a person
         print "The complexion of person", i + 1, "is", face_list[i]["expression"]["type"]
 
-        emotion =  "The emotion of person " + str(i + 1) + " is " + face_list[i]["emotion"]["type"]
+        emotion = "The emotion of person " + str(i + 1) + " is " + str(face_list[i]["emotion"]["type"])
         print emotion
         print "================================="
     cv2.imwrite("./gender_result.jpg", img)
@@ -83,6 +82,7 @@ def judge_expression(n):
     elif n == "laugh":
         e = 2
     return e
+
 
 if __name__ == '__main__':
     gender("./capture.jpg")

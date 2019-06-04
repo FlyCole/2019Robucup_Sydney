@@ -35,7 +35,7 @@ class Farewell():
         self.port = params["port"]
         self.session = qi.Session()
         rospy.init_node("Farewell")
-
+        # Try to connect to pepper
         try:
             self.session.connect("tcp://" + self.ip + ":" + str(self.port))
         except RuntimeError:
@@ -63,6 +63,7 @@ class Farewell():
 
         # Set parameters
         self.sound_switch = True
+        self.angle = -0.4
 
         # Close basic_awareness
         if self.BasicAwa.isEnabled():
@@ -100,27 +101,24 @@ class Farewell():
         if self.AutonomousLife.getState() != "disabled":
             self.AutonomousLife.setState("disabled")
         self.RobotPos.goToPosture("Stand", .5)
-        # 初始化录音
-        self.record_delay = 2
-        self.speech_hints = []
-        self.enable_speech_recog = True
-        self.SoundDet.setParameter("Sensitivity", .4)
-        self.SoundDet.subscribe('sd')
-        self.SoundDet_s = self.Memory.subscriber("SoundDetected")
-        self.SoundDet_s.signal.connect(self.callback_sound_det)
 
-        # Initiate Member-Function
-
+        # Invoke Member-Function
+        self.sound_localization()
 
 
     # Functions
+    def __del__(self):
+        print ('\033[0;32m [Kamerider I] System Shutting Down... \033[0m')
+        self.AudioRec.stopMicrophonesRecording()
+        self.Tracker.stopTracker()
+        self.Tracker.unregisterAllTargets()
+
+
     def sound_localization(self):
         self.SoundLoc.subscribe("SoundLocated")
         self.SoundLoc.setParameter("Sensitivity", 0.7)
         self.sound_localization_sub = self.Memory.subscriber("ALSoundLocalization/SoundLocated")
         self.sound_localization_sub.signal.connect(self.callback_localization)
-
-
 
 
     # Callback Functions
@@ -134,3 +132,16 @@ class Farewell():
         if sound_loc[1][2] > .5:
             self.Motion.moveTo(0, 0, sound_loc[1][0])
         self.sound_switch = True
+
+
+def main():
+    params = {
+        'ip' : "192.168.3.93",
+        'port' : 9559,
+        'rgb_topic' : 'pepper_robot/camera/front/image_raw'
+    }
+    Farewell(params)
+
+
+if __name__ == "__main__":
+    main()

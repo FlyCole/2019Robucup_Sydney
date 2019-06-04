@@ -11,23 +11,21 @@
 """
 
 import cv2
+import rospy
+from std_msgs.msg import String
 
 
-def capture_pic():
+def capture_pic(msg):
     cap = cv2.VideoCapture(0)
     i = 0
-    while (1):
-        ret, frame = cap.read()
-        k = cv2.waitKey(1)
-        if k == 27:
-            break
-        elif k == ord('s'):
-            cv2.imwrite('capture.jpg', frame)
-            i += 1
-        cv2.imshow("capture", frame)
+    ret, frame = cap.read()
+    cv2.imwrite('capture.jpg', frame)
+    cv2.imshow("capture", frame)
     cap.release()
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    capture_pic()
+    rospy.init_node("publish")
+    signal_sub = rospy.Subscriber("/patient_reach", String, capture_pic)
+    rospy.spin()
