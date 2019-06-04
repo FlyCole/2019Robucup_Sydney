@@ -10,6 +10,7 @@ import json
 
 def gender(img_name):
     max_re = 0
+    emotion = None
     max_rectangle_geder = "none"
     context = ssl._create_unverified_context()
     # client_id 为官网获取的AK， client_secret 为官网获取的SK
@@ -66,11 +67,11 @@ def gender(img_name):
         expression = judge_expression(face_list[i]["expression"]["type"])# Judge the complexion of a person
         print "The complexion of person", i + 1, "is", face_list[i]["expression"]["type"]
 
-        print "The emotion of person", i + 1, "is", face_list[i]["emotion"]["type"]
-
+        emotion =  "The emotion of person " + str(i + 1) + " is " + face_list[i]["emotion"]["type"]
+        print emotion
         print "================================="
     cv2.imwrite("./gender_result.jpg", img)
-    return male_num, female_num, max_rectangle_geder
+    return emotion
 
 
 def judge_expression(n):
