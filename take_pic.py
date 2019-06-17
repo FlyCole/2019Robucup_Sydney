@@ -17,7 +17,6 @@ from std_msgs.msg import String
 
 def capture_pic(msg):
     cap = cv2.VideoCapture(0)
-    i = 0
     ret, frame = cap.read()
     cv2.imwrite('capture.jpg', frame)
     cv2.imshow("capture", frame)

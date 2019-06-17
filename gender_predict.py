@@ -53,6 +53,7 @@ def gender(img_name):
         cv2.putText(img, face_list[i]["gender"]["type"], (left-10, bottom+40), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 3)
         cv2.rectangle(img, (left, top), (right, bottom), (0, 0, 255), 2)
         if (right-left) * (bottom-top) > max_re:
+
             max_rectangle_geder = face_list[i]["gender"]["type"]
         print "The gender of person", i + 1, "is", face_list[i]["gender"]["type"]
         print "The age of person", i + 1, "is", face_list[i]["age"]
