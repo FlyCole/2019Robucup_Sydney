@@ -60,7 +60,7 @@ class correct_orientation:
     def correct_orientation(self, frame):
         frame_copy = frame.copy()
         rects = self.detector(frame_copy, 2)
-        k_CO = 0.002
+        k_CO = 2.0
         if len(rects) != 0:
             image_max = 0
             self.center = 0
@@ -71,9 +71,11 @@ class correct_orientation:
                 if (rect.right() - rect.left()) * (rect.bottom() - rect.top()) > image_max:
                     image_max = (rect.right() - rect.left()) * (rect.bottom() - rect.top())
                     self.center = (rect.left() + rect.right()) / 2
-                    print self.center
+                    print "center:", self.center
+                    print "iamge_max:", image_max
+                    print "-------------------"
             self.judge()
-            self.Motion.moveTo(0, 0, k_CO * self.error)
+            self.Motion.moveTo(0, 0, k_CO * self.error / float(image_max))
 
     def judge(self):
         self.error = self.width / 2 - self.center

@@ -21,6 +21,7 @@ import actionlib
 import reach_person
 import find_driver
 import face_track
+import conversation
 import correct_orientation
 from threading import Thread
 from std_srvs.srv import Empty
@@ -98,29 +99,30 @@ class Farewell():
         self.go_back = ["bathroom", "living room", "bedroom", "kitchen", "toilet"]
         # TimeStamp
         ticks = time.time()
-        # 0代表top相机 最后一个参数是fps
+        # 0 represents TOP camera, the last parameter is FPS
         self.VideoDev.subscribeCamera(str(ticks), 0, 2, 11, 40)
-        # 设置dialog语言
+        # set dialog language
         self.Dialog.setLanguage("English")
         self.TextToSpe.setLanguage("English")
-        # 录下的音频保存的路径
+        # the path of the recorded audio
         self.audio_path = '/home/nao/audio/record.wav'
         self.recog_result = "None"
-        # Beep 音量
+        # Beep volume
         self.beep_volume = 70
         self.head_fix = True
-        # 设置初始化头的位置 走路的时候固定头的位置
+        # initial the position of head, fix the position when walking
         self.Motion.setStiffnesses("Head", 1.0)
         self.Motion.setAngles("Head", [0., self.angle], .05)
-        # 设置说话速度
+        # set the speed of speaking
         self.TextToSpe.setParameter("speed", 80.0)
-        # 关闭AutonomousLife模式
+        # Close AutonomousLife Model
         if self.AutonomousLife.getState() != "disabled":
             self.AutonomousLife.setState("disabled")
         self.RobotPos.goToPosture("Stand", .5)
 
         # Invoke Member-Function
         # self.find_person()
+        self.catch_cloth()
         # self.go_out()
         self.find_driver()
         self.reach_driver()
@@ -137,27 +139,38 @@ class Farewell():
     def find_person(self):
         self.TextToSpe.say("I'm ready to carry out this mission.")
         self.angle = -.35
+
         reach_person.main(self.session)
         self.TextToSpe.say("Wait a minute. I will guide you to the cab, don't forget your coat!")
 
+    def catch_cloth(self):
+        self.TextToSpe.say("May I have your name, sir?")
+        
+        cloth = {
+            "Zhangjiashi":"point1",
+            "Renyifei":"point2",
+            "Lindasheng":"point3",
+            "Xuyucheng":"point4"
+        }
+        while True:
+            con = conversation.conversation(self.session, self.ip)
+            con_result = con.get_result()
+            print "The results of Baidu is:", con_result
+            if con_result != "00":
+                break
+
+
+
     def find_driver(self):
         self.TextToSpe.say("I'm ready to find the driver!")
-        person_num = 0
         while True:
             self.Motion.moveTo(0, 0, 3.14 / 6)
             FD = find_driver.find_driver(self.session)
             if FD.if_find_driver:
                 person_num = FD.get_person_num()
                 break
-            # print "person_num:", person_num
-        while True:
-            CO = correct_orientation.correct_orientation(self.session)
-            print "error:", CO.error
-            if CO.if_correct:
-                break
-
-        # FT = face_track.face_track(self.session, person_num)
-
+        CO = correct_orientation.correct_orientation(self.session)
+        print "error:", CO.error
         self.TextToSpe.say("I have already found the driver! Please follow me!")
 
     def go_out(self):
@@ -167,7 +180,7 @@ class Farewell():
     def reach_driver(self):
         FT = face_track.face_track(self.session)
         FT.find_person()
-        print 1
+        self.TextToSpe.say("Here's the driver. Have a good night!")
 
     def load_waypoint(self, file_name):
         curr_pos = PoseStamped()
@@ -200,7 +213,7 @@ class Farewell():
         self.nav_as.send_goal(Point)
         self.map_clear_srv()
         count_time = 0
-        # 等于3的时候就是到达目的地了
+        # = 3, when Pepper reaches the destination
         while self.nav_as.get_state() != 3:
             count_time += 1
             time.sleep(1)
@@ -210,9 +223,7 @@ class Farewell():
         # self.TextToSpe.say("I have arrived at " + destination)
         if label == "none":
             return
-    # Callback Functions
 
-    # Program Control
     def keyboard_control(self):
         print('\033[0;32m [Kamerider I] Start keyboard control \033[0m')
         command = ''
@@ -229,9 +240,9 @@ class Farewell():
 
 def main():
     params = {
-        'ip' : "192.168.3.93",
-        'port' : 9559,
-        'rgb_topic' : 'pepper_robot/camera/front/image_raw'
+        'ip': "192.168.3.93",
+        'port': 9559,
+        'rgb_topic': 'pepper_robot/camera/front/image_raw'
     }
     Farewell(params)
 

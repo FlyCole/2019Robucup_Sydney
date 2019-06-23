@@ -101,7 +101,6 @@ class reach_person:
         self.sound_loc = self.Memo.getData("ALSoundLocalization/SoundLocated")
         print("----Located!----", self.sound_loc[1][2])
         print("Energy:", self.sound_loc[1][3])
-        # time.sleep(0.5)
         if self.sound_loc[1][2] > .3:
             self.motion.moveTo(0, 0, self.sound_loc[1][0])
         self.count += 1
