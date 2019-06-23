@@ -70,6 +70,7 @@ class Farewell():
         self.angle = -0.4
         self.if_find_driver = False
         self.if_correct = False
+        self.current_person_name = "None"
         self.point_dataset = self.load_waypoint("waypoints_FW.txt")
 
         # ROS
@@ -97,6 +98,7 @@ class Farewell():
         self.start = ["follow", "following", "start", "follow me"]
         self.stop = ["stop", "here is the car"]
         self.go_back = ["bathroom", "living room", "bedroom", "kitchen", "toilet"]
+        self.person_name = ["alex", "mary", "david"]
         # TimeStamp
         ticks = time.time()
         # 0 represents TOP camera, the last parameter is FPS
@@ -121,7 +123,7 @@ class Farewell():
         self.RobotPos.goToPosture("Stand", .5)
 
         # Invoke Member-Function
-        # self.find_person()
+        self.find_person()
         self.catch_cloth()
         # self.go_out()
         self.find_driver()
@@ -139,24 +141,27 @@ class Farewell():
     def find_person(self):
         self.TextToSpe.say("I'm ready to carry out this mission.")
         self.angle = -.35
-
         reach_person.main(self.session)
-        self.TextToSpe.say("Wait a minute. I will guide you to the cab, don't forget your coat!")
 
     def catch_cloth(self):
-        self.TextToSpe.say("May I have your name, sir?")
+        self.TextToSpe.say("May i have your name, sir?")
         
-        cloth = {
-            "Zhangjiashi":"point1",
-            "Renyifei":"point2",
-            "Lindasheng":"point3",
-            "Xuyucheng":"point4"
+        clothes = {
+            "Zhangjiashi": "point1",
+            "Renyifei": "point2",
+            "Lindasheng": "point3",
+            "Xuyucheng": "point4",
+            "alex": "point5"
         }
         while True:
             con = conversation.conversation(self.session, self.ip)
             con_result = con.get_result()
             print "The results of Baidu is:", con_result
             if con_result != "00":
+                point = self.audio_analyze(con_result, clothes)
+                print point
+                # self.go_to_waypoint(self.point_dataset[point], "point1")
+                self.TextToSpe.say("Wait a minute. I will guide you to the cab, don't forget your coat!")
                 break
 
 
@@ -167,7 +172,6 @@ class Farewell():
             self.Motion.moveTo(0, 0, 3.14 / 6)
             FD = find_driver.find_driver(self.session)
             if FD.if_find_driver:
-                person_num = FD.get_person_num()
                 break
         CO = correct_orientation.correct_orientation(self.session)
         print "error:", CO.error
@@ -208,7 +212,7 @@ class Farewell():
         print ('\033[0;32m [Kamerider I] Points Loaded! \033[0m')
         return dataset_points
 
-    def go_to_waypoint(self, Point, destination, label="none"):  # Point代表目标点 destination代表目标点的文本 label
+    def go_to_waypoint(self, Point, label="none"):  # Point代表目标点 destination代表目标点的文本 label
         self.angle = .3
         self.nav_as.send_goal(Point)
         self.map_clear_srv()
@@ -223,6 +227,13 @@ class Farewell():
         # self.TextToSpe.say("I have arrived at " + destination)
         if label == "none":
             return
+
+    def audio_analyze(self, result, clothes):
+        point = None
+        for i in range(len(self.person_name)):
+            if re.search(self.person_name[i], result) != None:
+                point = clothes[self.person_name[i]]
+        return point
 
     def keyboard_control(self):
         print('\033[0;32m [Kamerider I] Start keyboard control \033[0m')

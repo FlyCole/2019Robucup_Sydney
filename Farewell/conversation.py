@@ -106,7 +106,8 @@ class conversation:
         os.system(cmd)
         print('\033[0;32m [Kamerider I] Record ended start recognizing \033[0m')
         self.recog_result = self.baidu_recognition("./audio_record/recog.wav").lower()
-        print "===============", self.recog_result
+        print "==============="
+        print self.recog_result
 
     def baidu_recognition(self, path):
         token = self.get_token()
@@ -116,7 +117,6 @@ class conversation:
         except:
             print('Failed')
             return "00"
-        print result
         return result
 
     def get_token(self):
