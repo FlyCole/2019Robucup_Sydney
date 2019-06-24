@@ -71,7 +71,7 @@ class face_track:
                     center_lengthwise = (rect.bottom() + rect.top()) / 2
                     center_crosswise = (rect.left() + rect.right()) / 2
             print float(image_max) / float(self.height * self.width)
-            if float(image_max) / float(self.height * self.width) > .018:
+            if float(image_max) / float(self.height * self.width) > .03:
                 self.get_image_switch = False
                 self.if_stop = True
             else:

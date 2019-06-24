@@ -23,7 +23,7 @@ import find_driver
 import face_track
 import conversation
 import correct_orientation
-from threading import Thread
+import speech_recognization_FW
 from std_srvs.srv import Empty
 from actionlib_msgs.msg import GoalID
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -125,11 +125,11 @@ class Farewell():
         # Invoke Member-Function
         self.find_person()
         self.catch_cloth()
-        # self.go_out()
+        self.go_out()
         self.find_driver()
         self.reach_driver()
-
         self.keyboard_control()
+
 
     # Functions
     def __del__(self):
@@ -153,6 +153,7 @@ class Farewell():
             "Xuyucheng": "point4",
             "alex": "point5"
         }
+        osr = speech_recognization_FW.offline_speech_recognization(self.session)
         while True:
             con = conversation.conversation(self.session, self.ip)
             con_result = con.get_result()
@@ -164,9 +165,9 @@ class Farewell():
                 self.TextToSpe.say("Wait a minute. I will guide you to the cab, don't forget your coat!")
                 break
 
-
-
     def find_driver(self):
+        self.angle = -.3
+        self.Motion.setAngles("Head", [0., self.angle], .05)
         self.TextToSpe.say("I'm ready to find the driver!")
         while True:
             self.Motion.moveTo(0, 0, 3.14 / 6)
@@ -178,7 +179,8 @@ class Farewell():
         self.TextToSpe.say("I have already found the driver! Please follow me!")
 
     def go_out(self):
-        #self.go_to_waypoint(self.point_dataset["point19"], "point1", "first")
+        self.go_to_waypoint(self.point_dataset["point1"], "point1")
+        self.go_to_waypoint(self.point_dataset["point2"], "point1")
         print 1
 
     def reach_driver(self):
