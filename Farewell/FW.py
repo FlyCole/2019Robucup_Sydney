@@ -9,23 +9,24 @@
     Note: Take one person each time.
 """
 import qi
-import os
 import re
-import cv2
 import sys
 import time
 import rospy
-import thread
 import atexit
 import actionlib
 import reach_person
 import find_driver
 import face_track
 import conversation
+import thread
+import tf
 import correct_orientation
 import speech_recognization_FW
 from std_srvs.srv import Empty
 from actionlib_msgs.msg import GoalID
+from math import pi
+from tf_conversions import transformations
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Twist, PoseStamped, PoseWithCovarianceStamped
 
@@ -70,6 +71,7 @@ class Farewell():
         self.angle = -0.4
         self.if_find_driver = False
         self.if_correct = False
+        self.point_added = 0
         self.current_person_name = "None"
         self.point_dataset = self.load_waypoint("waypoints_FW.txt")
 
@@ -95,9 +97,6 @@ class Farewell():
 
         # Initiate key words
         self.place = ["bathroom", "kitchen", "party room", "dining room","dinning room", "living room", "bedroom"]
-        self.start = ["follow", "following", "start", "follow me"]
-        self.stop = ["stop", "here is the car"]
-        self.go_back = ["bathroom", "living room", "bedroom", "kitchen", "toilet"]
         self.person_name = ["alex", "mary", "david"]
         # TimeStamp
         ticks = time.time()
@@ -111,7 +110,7 @@ class Farewell():
         self.recog_result = "None"
         # Beep volume
         self.beep_volume = 70
-        self.head_fix = True
+        self.head_fix = False
         # initial the position of head, fix the position when walking
         self.Motion.setStiffnesses("Head", 1.0)
         self.Motion.setAngles("Head", [0., self.angle], .05)
@@ -123,11 +122,6 @@ class Farewell():
         self.RobotPos.goToPosture("Stand", .5)
 
         # Invoke Member-Function
-        self.find_person()
-        self.catch_cloth()
-        self.go_out()
-        self.find_driver()
-        self.reach_driver()
         self.keyboard_control()
 
 
@@ -138,22 +132,38 @@ class Farewell():
         self.Tracker.stopTracker()
         self.Tracker.unregisterAllTargets()
 
+    def start(self):
+        self.start_head_fix()
+        self.find_person()
+        self.catch_cloth()
+        self.go_out()
+        self.find_driver()
+        self.reach_driver()
+        self.go_back()
+
     def find_person(self):
         self.TextToSpe.say("I'm ready to carry out this mission.")
         self.angle = -.35
         reach_person.main(self.session)
+        self.save_point()
 
     def catch_cloth(self):
-        self.TextToSpe.say("May i have your name, sir?")
-        
+        self.TextToSpe.say("May I have your name, sir?")
         clothes = {
-            "Zhangjiashi": "point1",
-            "Renyifei": "point2",
-            "Lindasheng": "point3",
-            "Xuyucheng": "point4",
-            "alex": "point5"
+            "damn": "point18",
+            "ben": "point22",
+            "cat": "point15",
+            "mary": "point14",
+            "alex": "point7"
         }
-        osr = speech_recognization_FW.offline_speech_recognization(self.session)
+        cloth_colors = {
+            "damn": "red",
+            "ben": "yellow",
+            "cat": "green",
+            "mary": "black",
+            "alex": "blue"
+        }
+        # osr = speech_recognization_FW.offline_speech_recognization(self.session)
         while True:
             con = conversation.conversation(self.session, self.ip)
             con_result = con.get_result()
@@ -161,8 +171,14 @@ class Farewell():
             if con_result != "00":
                 point = self.audio_analyze(con_result, clothes)
                 print point
-                # self.go_to_waypoint(self.point_dataset[point], "point1")
-                self.TextToSpe.say("Wait a minute. I will guide you to the cab, don't forget your coat!")
+                self.head_fix = True
+                saying = "I can't take the coat. Could you please follow me and take your " + str(cloth_colors[con_result]) + " coat."
+                self.TextToSpe.say(saying)
+                self.go_to_waypoint(self.point_dataset["point15"], "point2")
+                self.go_to_waypoint(self.point_dataset[point], "point1")
+                saying = "Here's your " + str(cloth_colors[con_result]) + " coat."
+                self.TextToSpe.say(saying)
+                self.TextToSpe.say("Please follow me. I will guide you to the driver.")
                 break
 
     def find_driver(self):
@@ -174,14 +190,23 @@ class Farewell():
             FD = find_driver.find_driver(self.session)
             if FD.if_find_driver:
                 break
-        CO = correct_orientation.correct_orientation(self.session)
+        CO = correct_orientation.correct_orientation(self.session, 50)
         print "error:", CO.error
         self.TextToSpe.say("I have already found the driver! Please follow me!")
 
     def go_out(self):
-        self.go_to_waypoint(self.point_dataset["point1"], "point1")
-        self.go_to_waypoint(self.point_dataset["point2"], "point1")
-        print 1
+        self.go_to_waypoint(self.point_dataset["point31"], "point1")
+        self.go_to_waypoint(self.point_dataset["point7"], "point1")
+        self.go_to_waypoint(self.point_dataset["point5"], "point2")
+        self.head_fix = False
+
+    def go_back(self):
+        self.head_fix = True
+        self.go_to_waypoint(self.point_dataset["point6"], "point3")
+        self.go_to_waypoint(self.point_dataset["point8"], "point4")
+        self.go_to_waypoint(self.point_dataset["point13"], "point5")
+        self.go_to_waypoint(self.point_dataset["point16"], "point6")
+        self.go_to_waypoint(self.point_dataset["point19"], "point7")
 
     def reach_driver(self):
         FT = face_track.face_track(self.session)
@@ -237,19 +262,88 @@ class Farewell():
                 point = clothes[self.person_name[i]]
         return point
 
+    def save_point(self):
+        self.if_save_switch = True
+        print "save_point"
+        # amcl定位
+        amcl_sub = rospy.Subscriber('/amcl_pose', PoseWithCovarianceStamped, self.amcl_callback)
+        while self.if_save_switch:
+            time.sleep(1)
+            amcl_sub.unregister()
+
+    def amcl_callback(self, msg):
+        point_temp = MoveBaseGoal()
+        point_temp.target_pose.header.frame_id = '/map'
+        point_temp.target_pose.header.stamp = msg.header.stamp
+        point_temp.target_pose.header.seq = msg.header.seq
+        point_temp.target_pose.pose = msg.pose.pose
+        self.point_dataset.update({"point_add" + str(self.point_added): point_temp})
+        print('\033[0;32m [Kamerider I] Point saved successfully!! \033[0m')
+        self.if_save_switch = False
+
+    def head_fix_thread(self, arg):
+        self.Motion.setStiffnesses("head", 1.0)
+        while True:
+            if self.head_fix:
+                # print "=====self.angle:====", self.angle
+                self.Motion.setAngles("Head", [0., self.angle], .2)
+            time.sleep(3)
+
+    def start_head_fix(self):
+        arg = tuple([1])
+        thread.start_new_thread(self.head_fix_thread, arg)
+
+    def set_velocity(self, x, y, theta, duration=-1.):  # m/sec, rad/sec
+        # if duration > 0 : stop after duration(sec)
+        tt = Twist()
+        tt.linear.x = x
+        tt.linear.y = y
+        tt.angular.z = theta
+        self.cmd_vel_pub.publish(tt)
+        if duration < 0: return None
+        tic = time.time()
+        while time.time() - tic < duration:
+            self.cmd_vel_pub.publish(tt)
+            time.sleep(0.1)
+        tt = Twist()
+        tt.linear.x = 0
+        tt.linear.y = 0
+        tt.angular.z = 0
+        self.cmd_vel_pub.publish(tt)
+
+    def stop_motion(self):
+        self.set_velocity(0, 0, 0)
+
     def keyboard_control(self):
         print('\033[0;32m [Kamerider I] Start keyboard control \033[0m')
         command = ''
         while command != 'c':
             try:
                 command = raw_input('next command : ')
-                if command == 'w':
+                if command == 'st':
+                    self.start()
+                elif command == 'w':
+                    self.set_velocity(0.25, 0, 0)
+                elif command == 's':
+                    self.stop_motion()
+                elif command == 'x':
+                    self.set_velocity(-0.25, 0, 0)
+                elif command == 'a':
+                    self.set_velocity(0, 0.25, 0)
+                elif command == 'd':
+                    self.set_velocity(0, -0.25, 0)
+                elif command == 'q':
+                    self.set_velocity(0, 0, 0.35)
+                elif command == 'e':
+                    self.set_velocity(0, 0, -0.35)
+                elif command == "print":
+                    print self.point_dataset
+                elif command == 'c':
                     break
                 else:
                     print("Invalid Command!")
-            except EOFError:
-                print "Error!!"
-
+            except Exception as e:
+                print e
 
 def main():
     params = {

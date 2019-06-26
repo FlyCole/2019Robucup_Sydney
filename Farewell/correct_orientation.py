@@ -5,7 +5,7 @@ import cv2
 
 
 class correct_orientation:
-    def __init__(self, session):
+    def __init__(self, session, error_defined):
         self.session = session
         self.count = 0
 
@@ -14,6 +14,7 @@ class correct_orientation:
         self.Memo = self.session.service("ALMemory")
         self.VideoDev = self.session.service("ALVideoDevice")
         self.RobotPos = self.session.service("ALRobotPosture")
+        self.TextToSpe = self.session.service("ALTextToSpeech")
         self.if_stop = False
         self.detector = dlib.get_frontal_face_detector()
         self.RobotPos.goToPosture("Stand", .5)
@@ -22,9 +23,11 @@ class correct_orientation:
         self.if_correct = False
         self.center = 0
         self.error = 0
+        self.error_defined = error_defined
         self.width = 640
         self.height = 480
         # Functions
+        self.TextToSpe.say("orientation correcting!")
         self.find_person()
 
     def find_person(self):
@@ -79,6 +82,6 @@ class correct_orientation:
 
     def judge(self):
         self.error = self.width / 2 - self.center
-        if abs(self.error) <= 10:
+        if abs(self.error) <= self.error_defined:
             self.if_correct = True
             self.get_image_switch = False
